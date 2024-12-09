@@ -66,14 +66,17 @@ installer.exe
 
 # secrets
 *.env
-lib/models/generated_secrets.dart
+lib/collections/env.g.dart
 help.txt
-secrets.json
 
 dist
 appimage-build
 
 android/key.properties
-.fvm/flutter_sdk
 
 **/pb_data
+
+tm.json
+
+# FVM Version Cache
+.fvm/

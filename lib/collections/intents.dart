@@ -1,14 +1,18 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:spotube/components/player/player_controls.dart';
 import 'package:spotube/collections/routes.dart';
-import 'package:spotube/models/logger.dart';
-import 'package:spotube/provider/playlist_queue_provider.dart';
-import 'package:spotube/services/audio_player.dart';
+import 'package:spotube/modules/player/player_controls.dart';
+import 'package:spotube/pages/home/home.dart';
+import 'package:spotube/pages/library/library.dart';
+import 'package:spotube/pages/lyrics/lyrics.dart';
+import 'package:spotube/pages/search/search.dart';
+import 'package:spotube/provider/audio_player/querying_track_info.dart';
+import 'package:spotube/services/audio_player/audio_player.dart';
 import 'package:spotube/utils/platform.dart';
-import 'package:window_manager/window_manager.dart';
 
 class PlayPauseIntent extends Intent {
   final WidgetRef ref;
@@ -16,21 +20,16 @@ class PlayPauseIntent extends Intent {
 }
 
 class PlayPauseAction extends Action<PlayPauseIntent> {
-  final logger = getLogger(PlayPauseAction);
-
   @override
   invoke(intent) async {
     if (PlayerControls.focusNode.canRequestFocus) {
       PlayerControls.focusNode.requestFocus();
     }
-    final playlist = intent.ref.read(PlaylistQueueNotifier.provider);
-    final playlistNotifier = intent.ref.read(PlaylistQueueNotifier.notifier);
-    if (playlist == null) {
-      return null;
-    } else if (!PlaylistQueueNotifier.isPlaying) {
-      await playlistNotifier.play();
+
+    if (!audioPlayer.isPlaying) {
+      await audioPlayer.resume();
     } else {
-      await playlistNotifier.pause();
+      await audioPlayer.pause();
     }
     return null;
   }
@@ -66,18 +65,19 @@ class HomeTabIntent extends Intent {
 class HomeTabAction extends Action<HomeTabIntent> {
   @override
   invoke(intent) {
+    final router = intent.ref.read(routerProvider);
     switch (intent.tab) {
       case HomeTabs.browse:
-        router.go("/");
+        router.goNamed(HomePage.name);
         break;
       case HomeTabs.search:
-        router.go("/search");
+        router.goNamed(SearchPage.name);
         break;
       case HomeTabs.library:
-        router.go("/library");
+        router.goNamed(LibraryPage.name);
         break;
       case HomeTabs.lyrics:
-        router.go("/lyrics");
+        router.goNamed(LyricsPage.name);
         break;
     }
     return null;
@@ -93,9 +93,8 @@ class SeekIntent extends Intent {
 class SeekAction extends Action<SeekIntent> {
   @override
   invoke(intent) async {
-    final playlist = intent.ref.read(PlaylistQueueNotifier.provider);
-    final playlistNotifier = intent.ref.read(PlaylistQueueNotifier.notifier);
-    if (playlist == null || playlist.isLoading) {
+    final isFetchingActiveTrack = intent.ref.read(queryingTrackInfoProvider);
+    if (isFetchingActiveTrack) {
       DirectionalFocusAction().invoke(
         DirectionalFocusIntent(
           intent.forward ? TraversalDirection.right : TraversalDirection.left,
@@ -103,9 +102,8 @@ class SeekAction extends Action<SeekIntent> {
       );
       return null;
     }
-    final position =
-        (await audioPlayer.getCurrentPosition() ?? Duration.zero).inSeconds;
-    await playlistNotifier.seek(
+    final position = audioPlayer.position.inSeconds;
+    await audioPlayer.seek(
       Duration(
         seconds: intent.forward ? position + 5 : position - 5,
       ),
@@ -120,7 +118,7 @@ class CloseAppAction extends Action<CloseAppIntent> {
   @override
   invoke(intent) {
     if (kIsDesktop) {
-      windowManager.close();
+      exit(0);
     } else {
       SystemNavigator.pop();
     }

@@ -3,76 +3,88 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:collection/collection.dart';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:platform_ui/platform_ui.dart';
+
 import 'package:spotube/collections/spotube_icons.dart';
-import 'package:spotube/components/shared/page_window_title_bar.dart';
+import 'package:spotube/components/inter_scrollbar/inter_scrollbar.dart';
+import 'package:spotube/components/titlebar/titlebar.dart';
+import 'package:spotube/extensions/context.dart';
 import 'package:spotube/provider/blacklist_provider.dart';
-import 'package:tuple/tuple.dart';
 
 class BlackListPage extends HookConsumerWidget {
-  const BlackListPage({Key? key}) : super(key: key);
+  static const name = "blacklist";
+
+  const BlackListPage({super.key});
 
   @override
   Widget build(BuildContext context, ref) {
-    final blacklist = ref.watch(BlackListNotifier.provider);
+    final controller = useScrollController();
+    final blacklist = ref.watch(blacklistProvider);
     final searchText = useState("");
 
     final filteredBlacklist = useMemoized(
       () {
         if (searchText.value.isEmpty) {
-          return blacklist;
+          return blacklist.asData?.value ?? [];
         }
-        return blacklist
-            .map((e) => Tuple2(
-                  weightedRatio("${e.name} ${e.type.name}", searchText.value),
-                  e,
-                ))
-            .sorted((a, b) => b.item1.compareTo(a.item1))
-            .where((e) => e.item1 > 50)
-            .map((e) => e.item2)
-            .toList();
+        return blacklist.asData?.value
+                .map(
+                  (e) => (
+                    weightedRatio(
+                        "${e.name} ${e.elementType.name}", searchText.value),
+                    e,
+                  ),
+                )
+                .sorted((a, b) => b.$1.compareTo(a.$1))
+                .where((e) => e.$1 > 50)
+                .map((e) => e.$2)
+                .toList() ??
+            [];
       },
       [blacklist, searchText.value],
     );
 
-    return PlatformScaffold(
+    return Scaffold(
       appBar: PageWindowTitleBar(
-        center: const PlatformText("Blacklist"),
+        title: Text(context.l10n.blacklist),
         centerTitle: true,
-        leading: const PlatformBackButton(),
+        leading: const BackButton(),
       ),
       body: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: platform == TargetPlatform.windows
-                ? const EdgeInsets.all(8.0).copyWith(left: 45)
-                : const EdgeInsets.all(8.0),
-            child: PlatformTextField(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
               onChanged: (value) => searchText.value = value,
-              placeholder: "Search",
-              prefixIcon: SpotubeIcons.search,
+              decoration: InputDecoration(
+                hintText: context.l10n.search,
+                prefixIcon: const Icon(SpotubeIcons.search),
+              ),
             ),
           ),
-          ListView.builder(
-            shrinkWrap: true,
-            itemCount: filteredBlacklist.length,
-            itemBuilder: (context, index) {
-              final item = filteredBlacklist.elementAt(index);
-              return PlatformListTile(
-                leading: PlatformText("${index + 1}."),
-                title: PlatformText("${item.name} (${item.type.name})"),
-                subtitle: PlatformText.caption(item.id),
-                trailing: PlatformIconButton(
-                  icon: Icon(SpotubeIcons.trash, color: Colors.red[400]),
-                  onPressed: () {
-                    ref
-                        .read(BlackListNotifier.provider.notifier)
-                        .remove(filteredBlacklist.elementAt(index));
-                  },
-                ),
-              );
-            },
+          InterScrollbar(
+            controller: controller,
+            child: ListView.builder(
+              controller: controller,
+              shrinkWrap: true,
+              itemCount: filteredBlacklist.length,
+              itemBuilder: (context, index) {
+                final item = filteredBlacklist.elementAt(index);
+                return ListTile(
+                  leading: Text("${index + 1}."),
+                  title: Text("${item.name} (${item.elementType.name})"),
+                  subtitle: Text(item.elementId),
+                  trailing: IconButton(
+                    icon: Icon(SpotubeIcons.trash, color: Colors.red[400]),
+                    onPressed: () {
+                      ref
+                          .read(blacklistProvider.notifier)
+                          .remove(filteredBlacklist.elementAt(index).elementId);
+                    },
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),

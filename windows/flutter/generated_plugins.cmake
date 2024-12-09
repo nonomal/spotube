@@ -3,17 +3,28 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  audioplayers_windows
-  catcher
+  app_links
+  bonsoir_windows
+  desktop_webview_window
+  file_selector_windows
+  flutter_inappwebview_windows
+  flutter_secure_storage_windows
+  local_notifier
+  media_kit_libs_windows_audio
   permission_handler_windows
-  screen_retriever
+  screen_retriever_windows
+  sqlite3_flutter_libs
+  system_theme
+  tray_manager
   url_launcher_windows
   window_manager
-  window_size
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  flutter_discord_rpc
+  media_kit_native_event_loop
   metadata_god
+  smtc_windows
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

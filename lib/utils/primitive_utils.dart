@@ -27,19 +27,8 @@ abstract class PrimitiveUtils {
     } else if (num > 999999999) {
       return "${(num / 1000000000).toStringAsFixed(0)}B";
     } else {
-      return num.toString();
+      return num.toStringAsFixed(0);
     }
-  }
-
-  static String zeroPadNumStr(int input) {
-    return input < 10 ? "0$input" : input.toString();
-  }
-
-  static String toReadableDuration(Duration duration) {
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes % 60;
-    final seconds = duration.inSeconds % 60;
-    return "${hours > 0 ? "${zeroPadNumStr(hours)}:" : ""}${zeroPadNumStr(minutes)}:${zeroPadNumStr(seconds)}";
   }
 
   static Future<T> raceMultiple<T>(
@@ -56,5 +45,9 @@ abstract class PrimitiveUtils {
         );
       }),
     );
+  }
+
+  static String toSafeFileName(String str) {
+    return str.replaceAll(RegExp(r'[/\?%*:|"<>]'), ' ');
   }
 }

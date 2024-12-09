@@ -3,15 +3,24 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  audioplayers_linux
-  catcher
-  screen_retriever
+  desktop_webview_window
+  file_selector_linux
+  flutter_secure_storage_linux
+  gtk
+  local_notifier
+  media_kit_libs_linux
+  open_file_linux
+  screen_retriever_linux
+  sqlite3_flutter_libs
+  system_theme
+  tray_manager
   url_launcher_linux
   window_manager
-  window_size
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  flutter_discord_rpc
+  media_kit_native_event_loop
   metadata_god
 )
 

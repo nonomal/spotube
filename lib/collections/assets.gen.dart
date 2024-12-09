@@ -5,11 +5,24 @@
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
-// ignore_for_file: directives_ordering,unnecessary_import,implicit_dynamic_list_literal
+// ignore_for_file: directives_ordering,unnecessary_import,implicit_dynamic_list_literal,deprecated_member_use
 
 import 'package:flutter/widgets.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:flutter/services.dart';
+
+class $AssetsLogosGen {
+  const $AssetsLogosGen();
+
+  /// File path: assets/logos/songlink-transparent.png
+  AssetGenImage get songlinkTransparent =>
+      const AssetGenImage('assets/logos/songlink-transparent.png');
+
+  /// File path: assets/logos/songlink.png
+  AssetGenImage get songlink =>
+      const AssetGenImage('assets/logos/songlink.png');
+
+  /// List of all assets
+  List<AssetGenImage> get values => [songlinkTransparent, songlink];
+}
 
 class $AssetsTutorialGen {
   const $AssetsTutorialGen();
@@ -30,19 +43,47 @@ class $AssetsTutorialGen {
 class Assets {
   Assets._();
 
+  static const String license = 'LICENSE';
   static const AssetGenImage albumPlaceholder =
       AssetGenImage('assets/album-placeholder.png');
+  static const AssetGenImage bengaliPatternsBg =
+      AssetGenImage('assets/bengali-patterns-bg.jpg');
+  static const AssetGenImage branding = AssetGenImage('assets/branding.png');
   static const AssetGenImage emptyBox = AssetGenImage('assets/empty_box.png');
+  static const AssetGenImage invidious = AssetGenImage('assets/invidious.jpg');
+  static const AssetGenImage jiosaavn = AssetGenImage('assets/jiosaavn.png');
+  static const AssetGenImage likedTracks =
+      AssetGenImage('assets/liked-tracks.jpg');
+  static const $AssetsLogosGen logos = $AssetsLogosGen();
   static const AssetGenImage placeholder =
       AssetGenImage('assets/placeholder.png');
+  static const AssetGenImage spotubeHeroBanner =
+      AssetGenImage('assets/spotube-hero-banner.png');
   static const AssetGenImage spotubeLogoForeground =
       AssetGenImage('assets/spotube-logo-foreground.jpg');
+  static const AssetGenImage spotubeLogoBmp =
+      AssetGenImage('assets/spotube-logo.bmp');
+  static const String spotubeLogoIco = 'assets/spotube-logo.ico';
   static const AssetGenImage spotubeLogoPng =
       AssetGenImage('assets/spotube-logo.png');
-  static const SvgGenImage spotubeLogoSvg =
-      SvgGenImage('assets/spotube-logo.svg');
+  static const String spotubeLogoSvg = 'assets/spotube-logo.svg';
+  static const AssetGenImage spotubeLogoAndroid12 =
+      AssetGenImage('assets/spotube-logo_android12.png');
+  static const AssetGenImage spotubeNightlyLogoForeground =
+      AssetGenImage('assets/spotube-nightly-logo-foreground.jpg');
+  static const AssetGenImage spotubeNightlyLogoPng =
+      AssetGenImage('assets/spotube-nightly-logo.png');
+  static const String spotubeNightlyLogoSvg = 'assets/spotube-nightly-logo.svg';
+  static const AssetGenImage spotubeNightlyLogoAndroid12 =
+      AssetGenImage('assets/spotube-nightly-logo_android12.png');
   static const AssetGenImage spotubeScreenshot =
-      AssetGenImage('assets/spotube-screenshot.jpg');
+      AssetGenImage('assets/spotube-screenshot.png');
+  static const AssetGenImage spotubeTallCapsule =
+      AssetGenImage('assets/spotube-tall-capsule.png');
+  static const AssetGenImage spotubeWideCapsuleLarge =
+      AssetGenImage('assets/spotube-wide-capsule-large.png');
+  static const AssetGenImage spotubeWideCapsuleSmall =
+      AssetGenImage('assets/spotube-wide-capsule-small.png');
   static const AssetGenImage spotubeBanner =
       AssetGenImage('assets/spotube_banner.png');
   static const AssetGenImage success = AssetGenImage('assets/success.png');
@@ -51,14 +92,31 @@ class Assets {
       AssetGenImage('assets/user-placeholder.png');
 
   /// List of all assets
-  List<dynamic> get values => [
+  static List<dynamic> get values => [
+        license,
         albumPlaceholder,
+        bengaliPatternsBg,
+        branding,
         emptyBox,
+        invidious,
+        jiosaavn,
+        likedTracks,
         placeholder,
+        spotubeHeroBanner,
         spotubeLogoForeground,
+        spotubeLogoBmp,
+        spotubeLogoIco,
         spotubeLogoPng,
         spotubeLogoSvg,
+        spotubeLogoAndroid12,
+        spotubeNightlyLogoForeground,
+        spotubeNightlyLogoPng,
+        spotubeNightlyLogoSvg,
+        spotubeNightlyLogoAndroid12,
         spotubeScreenshot,
+        spotubeTallCapsule,
+        spotubeWideCapsuleLarge,
+        spotubeWideCapsuleSmall,
         spotubeBanner,
         success,
         userPlaceholder
@@ -66,9 +124,16 @@ class Assets {
 }
 
 class AssetGenImage {
-  const AssetGenImage(this._assetName);
+  const AssetGenImage(
+    this._assetName, {
+    this.size,
+    this.flavors = const {},
+  });
 
   final String _assetName;
+
+  final Size? size;
+  final Set<String> flavors;
 
   Image image({
     Key? key,
@@ -88,7 +153,7 @@ class AssetGenImage {
     ImageRepeat repeat = ImageRepeat.noRepeat,
     Rect? centerSlice,
     bool matchTextDirection = false,
-    bool gaplessPlayback = false,
+    bool gaplessPlayback = true,
     bool isAntiAlias = false,
     String? package,
     FilterQuality filterQuality = FilterQuality.low,
@@ -123,56 +188,14 @@ class AssetGenImage {
     );
   }
 
-  ImageProvider provider() => AssetImage(_assetName);
-
-  String get path => _assetName;
-
-  String get keyName => _assetName;
-}
-
-class SvgGenImage {
-  const SvgGenImage(this._assetName);
-
-  final String _assetName;
-
-  SvgPicture svg({
-    Key? key,
-    bool matchTextDirection = false,
+  ImageProvider provider({
     AssetBundle? bundle,
     String? package,
-    double? width,
-    double? height,
-    BoxFit fit = BoxFit.contain,
-    AlignmentGeometry alignment = Alignment.center,
-    bool allowDrawingOutsideViewBox = false,
-    WidgetBuilder? placeholderBuilder,
-    Color? color,
-    BlendMode colorBlendMode = BlendMode.srcIn,
-    String? semanticsLabel,
-    bool excludeFromSemantics = false,
-    Clip clipBehavior = Clip.hardEdge,
-    bool cacheColorFilter = false,
-    SvgTheme? theme,
   }) {
-    return SvgPicture.asset(
+    return AssetImage(
       _assetName,
-      key: key,
-      matchTextDirection: matchTextDirection,
       bundle: bundle,
       package: package,
-      width: width,
-      height: height,
-      fit: fit,
-      alignment: alignment,
-      allowDrawingOutsideViewBox: allowDrawingOutsideViewBox,
-      placeholderBuilder: placeholderBuilder,
-      color: color,
-      colorBlendMode: colorBlendMode,
-      semanticsLabel: semanticsLabel,
-      excludeFromSemantics: excludeFromSemantics,
-      clipBehavior: clipBehavior,
-      cacheColorFilter: cacheColorFilter,
-      theme: theme,
     );
   }
 

@@ -1,147 +1,93 @@
-import 'package:flutter/services.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:collection/collection.dart';
+import 'package:flutter/material.dart' hide Page;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:spotube/components/shared/heart_button.dart';
-import 'package:spotube/components/shared/track_table/track_collection_view.dart';
-import 'package:spotube/components/shared/track_table/tracks_table_view.dart';
-import 'package:spotube/hooks/use_breakpoints.dart';
-import 'package:spotube/models/logger.dart';
-import 'package:flutter/material.dart';
 import 'package:spotify/spotify.dart';
-import 'package:spotube/provider/playlist_queue_provider.dart';
-import 'package:spotube/services/queries/queries.dart';
+import 'package:spotube/components/dialogs/prompt_dialog.dart';
+import 'package:spotube/components/tracks_view/sections/body/use_is_user_playlist.dart';
+import 'package:spotube/components/tracks_view/track_view.dart';
+import 'package:spotube/components/tracks_view/track_view_props.dart';
+import 'package:spotube/extensions/context.dart';
+import 'package:spotube/extensions/image.dart';
+import 'package:spotube/provider/spotify/spotify.dart';
 
-import 'package:spotube/utils/service_utils.dart';
-import 'package:spotube/utils/type_conversion_utils.dart';
+class PlaylistPage extends HookConsumerWidget {
+  static const name = "playlist";
 
-class PlaylistView extends HookConsumerWidget {
-  final logger = getLogger(PlaylistView);
-  final PlaylistSimple playlist;
-  PlaylistView(this.playlist, {Key? key}) : super(key: key);
-
-  Future<void> playPlaylist(
-    PlaylistQueueNotifier playlistNotifier,
-    List<Track> tracks,
-    WidgetRef ref, {
-    Track? currentTrack,
-  }) async {
-    final sortBy = ref.read(trackCollectionSortState(playlist.id!));
-    final sortedTracks = ServiceUtils.sortTracks(tracks, sortBy);
-    currentTrack ??= sortedTracks.first;
-    final isPlaylistPlaying = playlistNotifier.isPlayingPlaylist(tracks);
-    if (!isPlaylistPlaying) {
-      await playlistNotifier.loadAndPlay(
-        sortedTracks,
-        active: sortedTracks.indexWhere((s) => s.id == currentTrack?.id),
-      );
-    } else if (isPlaylistPlaying &&
-        currentTrack.id != null &&
-        currentTrack.id != playlistNotifier.state?.activeTrack.id) {
-      await playlistNotifier.playTrack(currentTrack);
-    }
-  }
+  final PlaylistSimple _playlist;
+  const PlaylistPage({
+    super.key,
+    required PlaylistSimple playlist,
+  }) : _playlist = playlist;
 
   @override
   Widget build(BuildContext context, ref) {
-    ref.watch(PlaylistQueueNotifier.provider);
-    final playlistNotifier = ref.watch(PlaylistQueueNotifier.notifier);
-
-    final breakpoint = useBreakpoints();
-
-    final meSnapshot = useQueries.user.me(ref);
-    final tracksSnapshot = useQueries.playlist.tracksOfQuery(ref, playlist.id!);
-
-    final isPlaylistPlaying = useMemoized(
-      () => playlistNotifier.isPlayingPlaylist(tracksSnapshot.data ?? []),
-      [playlistNotifier, tracksSnapshot.data],
-    );
-
-    final titleImage = useMemoized(
-        () => TypeConversionUtils.image_X_UrlString(
-              playlist.images,
-              placeholder: ImagePlaceholder.collection,
-            ),
-        [playlist.images]);
-
-    return TrackCollectionView(
-      id: playlist.id!,
-      isPlaying: isPlaylistPlaying,
-      title: playlist.name!,
-      titleImage: titleImage,
-      tracksSnapshot: tracksSnapshot,
-      description: playlist.description,
-      isOwned: playlist.owner?.id != null &&
-          playlist.owner!.id == meSnapshot.data?.id,
-      onPlay: ([track]) {
-        if (tracksSnapshot.hasData) {
-          if (!isPlaylistPlaying) {
-            playPlaylist(
-              playlistNotifier,
-              tracksSnapshot.data!,
-              ref,
-              currentTrack: track,
-            );
-          } else if (isPlaylistPlaying && track != null) {
-            playPlaylist(
-              playlistNotifier,
-              tracksSnapshot.data!,
-              ref,
-              currentTrack: track,
-            );
-          } else {
-            playlistNotifier.remove(tracksSnapshot.data!);
-          }
-        }
-      },
-      onAddToQueue: () {
-        if (tracksSnapshot.hasData && !isPlaylistPlaying) {
-          playlistNotifier.add(tracksSnapshot.data!);
-        }
-      },
-      bottomSpace: breakpoint.isLessThanOrEqualTo(Breakpoints.md),
-      showShare: playlist.id != "user-liked-tracks",
-      routePath: "/playlist/${playlist.id}",
-      onShare: () {
-        final data = "https://open.spotify.com/playlist/${playlist.id}";
-        Clipboard.setData(
-          ClipboardData(text: data),
-        ).then((_) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              width: 300,
-              behavior: SnackBarBehavior.floating,
-              content: Text(
-                "Copied $data to clipboard",
-                textAlign: TextAlign.center,
+    final playlist = ref
+            .watch(
+              favoritePlaylistsProvider.select(
+                (value) => value.whenData(
+                  (value) =>
+                      value.items.firstWhereOrNull((s) => s.id == _playlist.id),
+                ),
               ),
-            ),
-          );
-        });
-      },
-      heartBtn: PlaylistHeartButton(playlist: playlist),
-      onShuffledPlay: ([track]) {
-        final tracks = [...?tracksSnapshot.data]..shuffle();
+            )
+            .asData
+            ?.value ??
+        _playlist;
 
-        if (tracksSnapshot.hasData) {
-          if (!isPlaylistPlaying) {
-            playPlaylist(
-              playlistNotifier,
-              tracks,
-              ref,
-              currentTrack: track,
-            );
-          } else if (isPlaylistPlaying && track != null) {
-            playPlaylist(
-              playlistNotifier,
-              tracks,
-              ref,
-              currentTrack: track,
-            );
-          } else {
-            playlistNotifier.stop();
-          }
-        }
-      },
+    final tracks = ref.watch(playlistTracksProvider(playlist.id!));
+    final tracksNotifier =
+        ref.watch(playlistTracksProvider(playlist.id!).notifier);
+    final isFavoritePlaylist =
+        ref.watch(isFavoritePlaylistProvider(playlist.id!));
+
+    final favoritePlaylistsNotifier =
+        ref.watch(favoritePlaylistsProvider.notifier);
+
+    final isUserPlaylist = useIsUserPlaylist(ref, playlist.id!);
+
+    return InheritedTrackView(
+      collection: playlist,
+      image: playlist.images.asUrlString(
+        placeholder: ImagePlaceholder.collection,
+      ),
+      pagination: PaginationProps(
+        hasNextPage: tracks.asData?.value.hasMore ?? false,
+        isLoading: tracks.isLoadingNextPage,
+        onFetchMore: tracksNotifier.fetchMore,
+        onRefresh: () async {
+          ref.invalidate(playlistTracksProvider(playlist.id!));
+        },
+        onFetchAll: () async {
+          return await tracksNotifier.fetchAll();
+        },
+      ),
+      title: playlist.name!,
+      description: playlist.description,
+      tracks: tracks.asData?.value.items ?? [],
+      routePath: '/playlist/${playlist.id}',
+      isLiked: isFavoritePlaylist.asData?.value ?? false,
+      shareUrl: playlist.externalUrls?.spotify ??
+          "https://open.spotify.com/playlist/${playlist.id}",
+      onHeart: isFavoritePlaylist.asData?.value == null
+          ? null
+          : () async {
+              final confirmed = isUserPlaylist
+                  ? await showPromptDialog(
+                      context: context,
+                      title: context.l10n.delete_playlist,
+                      message: context.l10n.delete_playlist_confirmation,
+                    )
+                  : true;
+              if (!confirmed) return null;
+
+              if (isFavoritePlaylist.asData!.value) {
+                await favoritePlaylistsNotifier.removeFavorite(playlist);
+              } else {
+                await favoritePlaylistsNotifier.addFavorite(playlist);
+              }
+              return isUserPlaylist;
+            },
+      child: const TrackView(),
     );
   }
 }
